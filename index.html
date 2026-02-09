@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Rotas - Luremont Ridge</title>
+    <style>
+        /* Reset e Variáveis */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #8b3a2b 0%, #5e261f 100%);
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --card-border: 1px solid rgba(255, 255, 255, 0.15);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent-yellow: #f4c568;
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 80px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 0;
+            border-right: var(--card-border);
+        }
+
+        .logo-icon {
+            font-size: 24px;
+            margin-bottom: 40px;
+        }
+
+        .nav-item {
+            color: var(--text-secondary);
+            font-size: 20px;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .nav-item.active {
+            color: var(--accent-yellow);
+            background: rgba(244, 197, 104, 0.2);
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        .user-avatar-mini {
+            margin-top: auto;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background-color: #ddd;
+            background-image: url('https://i.pravatar.cc/100?img=11'); /* Placeholder */
+            background-size: cover;
+        }
+
+        /* Conteúdo Principal */
+        main {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .search-bar {
+            background: var(--card-bg);
+            border: var(--card-border);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Grid do Dashboard */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 25px;
+            height: 100%;
+        }
+
+        /* Estilos Gerais dos Cards */
+        .card {
+            background: var(--card-bg);
+            border: var(--card-border);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Card: Gráfico de Rotas */
+        .route-chart-card {
+            grid-column: 1 / 2;
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.15);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+
+        /* Simulação do Gráfico com SVG */
+        .chart-container {
+            flex: 1;
+            display: flex;
+            align-items: flex-end;
+            position: relative;
+            padding-top: 20px;
+        }
+        
+        svg.chart-line {
+            width: 100%;
+            height: 100px;
+            overflow: visible;
+        }
+
+        polyline {
+            fill: none;
+            stroke: white;
+            stroke-width: 2;
+            stroke-dasharray: 4; /* Tracejado no final */
+        }
+        
+        circle {
+            fill: white;
+        }
+
+        /* Card: Perfil */
+        .profile-card {
+            grid-column: 2 / 3;
+            text-align: center;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .profile-pic {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            border: 2px solid white;
+            background-image: url('https://i.pravatar.cc/150?img=60');
+            background-size: cover;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .stat-item h3 {
+            font-size: 18px;
+        }
+        .stat-item p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Card: Imagem Paisagem */
+        .image-card {
+            grid-column: 1 / 2;
+            background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'); /* Montanha */
+            background-size: cover;
+            background-position: center;
+            min-height: 250px;
+            position: relative;
+        }
+        
+        .dots {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+        .dot { width: 8px; height: 8px; background: rgba(255,255,255,0.5); border-radius: 50%; }
+        .dot.active { background: white; }
+
+        /* Card: Detalhes da Trilha */
+        .details-card {
+            grid-column: 2 / 3;
+            justify-content: space-between;
+        }
+
+        .trail-title {
+            font-size: 36px;
+            line-height: 1.1;
+            margin-bottom: 20px;
+        }
+
+        .trail-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        .stat-block span {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+
+        .description {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #e8dcc4; /* Tom creme/off-white */
+            color: #5e261f;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo-icon">▲</div> <div class="nav-item">🏠</div>
+        <div class="nav-item active">⛰️</div>
+        <div class="nav-item">👤</div>
+        <div class="nav-item">🗺️</div>
+        <div class="nav-item">⚙️</div>
+        <div class="user-avatar-mini"></div>
+    </aside>
+
+    <main>
+        <header>
+            <h1>Routes</h1>
+            <div class="header-actions">
+                <div class="search-bar">🔍 Search</div>
+                <span>⊕ Add</span>
+                <span>📊 Indicators</span>
+                <span>⏰ Alert</span>
+            </div>
+        </header>
+
+        <section class="dashboard-grid">
+            
+            <div class="card route-chart-card">
+                <div class="card-header">
+                    <span class="badge">Rout level 4</span>
+                    <span class="badge">Estimated time 8hr</span>
+                </div>
+                <div class="chart-container">
+                    <svg class="chart-line" viewBox="0 0 400 100" preserveAspectRatio="none">
+                        <path d="M10,80 Q50,85 80,60 T150,70 T220,50 T300,60 T380,50" 
+                              fill="none" stroke="white" stroke-width="2" />
+                        <circle cx="10" cy="80" r="3" />
+                        <circle cx="80" cy="60" r="3" />
+                        <circle cx="150" cy="70" r="3" />
+                        <circle cx="220" cy="50" r="3" />
+                        <circle cx="300" cy="60" r="3" />
+                        <circle cx="380" cy="50" r="3" />
+                        
+                        <text x="20" y="70" fill="white" font-size="10">1,200 m</text>
+                        <text x="220" y="40" fill="white" font-size="10">2,800 m</text>
+                        <text x="350" y="40" fill="white" font-size="10">4,200 m</text>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="card profile-card">
+                <div class="profile-pic"></div>
+                <h2>Demian Karleo</h2>
+                <p style="color:var(--text-secondary); font-size: 0.9em; margin-bottom:10px;">@Thedemian.one</p>
+                
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <h3>80</h3>
+                        <p>Tracks</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>200</h3>
+                        <p>Followers</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>110</h3>
+                        <p>Following</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card image-card">
+                <div class="dots">
+                    <div class="dot active"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+
+            <div class="card details-card">
+                <div>
+                    <h2 class="trail-title">Luremont<br>Ridge</h2>
+                    
+                    <div class="trail-stats">
+                        <div class="stat-block">
+                            <span>🏔️ Elevation</span>
+                            <strong>4,200 feet</strong>
+                        </div>
+                        <div class="stat-block">
+                            <span>💨 Wind</span>
+                            <strong>15 mph</strong>
+                        </div>
+                        <div class="stat-block">
+                            <span>❄️ Snow</span>
+                            <strong>10 inch</strong>
+                        </div>
+                    </div>
+
+                    <p class="description">
+                        Explore Luremont Ridge, where sunrise lights up the cliffs in warm amber. Expect steady climbs, big views, and a rewarding full-day trek.
+                    </p>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary">Book a tour</button>
+                    <button class="btn btn-secondary">Preview trail</button>
+                    <span style="font-size: 20px; cursor:pointer;">♡</span>
+                </div>
+            </div>
+
+        </section>
+    </main>
+</body>
+</html>
