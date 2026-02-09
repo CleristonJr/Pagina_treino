@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracker de Treinos - Soma Diária</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- ESTILOS (Mesmo Design) --- */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #8b3a2b 0%, #5e261f 100%);
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --card-border: 1px solid rgba(255, 255, 255, 0.15);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent-yellow: #f4c568;
+            --input-bg: rgba(0, 0, 0, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 80px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 0;
+            border-right: var(--card-border);
+        }
+        .nav-item { font-size: 24px; margin-bottom: 30px; cursor: pointer; opacity: 0.6; transition: 0.3s; }
+        .nav-item:hover, .nav-item.active { opacity: 1; color: var(--accent-yellow); }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: 300px 1fr;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: var(--card-border);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chart-card { grid-column: 1 / 2; grid-row: 1 / 2; position: relative; }
+        .input-card { grid-column: 1 / 2; grid-row: 2 / 3; }
+        .history-card { grid-column: 2 / 3; grid-row: 1 / 3; overflow-y: auto; }
+
+        /* Form Elements */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9em; color: var(--text-secondary); margin-bottom: 5px; }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: var(--input-bg);
+            color: white;
+            outline: none;
+        }
+
+        button.btn-add {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-yellow);
+            color: #333;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button.btn-add:hover { background: #fff; }
+
+        .workout-item {
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .workout-info h4 { font-size: 14px; }
+        .workout-info p { font-size: 12px; color: var(--text-secondary); }
+        .effort-badge {
+            background: rgba(244, 197, 104, 0.2);
+            color: var(--accent-yellow);
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="nav-item">🔥</div>
+        <div class="nav-item active">📊</div>
+        <div class="nav-item">⚙️</div>
+    </aside>
+
+    <main>
+        <header>
+            <h1>Painel de Carga Total</h1>
+            <div style="font-size: 0.9em; color: #ddd;">Bem-vindo, Dev</div>
+        </header>
+
+        <section class="dashboard-grid">
+            
+            <div class="card chart-card">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <h3>Volume de Treino (Acumulado)</h3>
+                    <span style="font-size:12px; color:var(--text-secondary)">Soma do Esforço Diário</span>
+                </div>
+                <div style="position: relative; height: 100%; width: 100%;">
+                    <canvas id="workoutChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card input-card">
+                <h3 style="margin-bottom: 15px;">Novo Registro</h3>
+                <div class="form-group">
+                    <label>Dia do Mês (1-31)</label>
+                    <input type="number" id="dayInput" min="1" max="31" placeholder="Ex: 10">
+                </div>
+                <div class="form-group">
+                    <label>Nível de Esforço (0 a 10)</label>
+                    <input type="range" id="effortInput" min="0" max="10" step="1" value="5" oninput="this.nextElementSibling.value = this.value">
+                    <output style="float:right; font-weight:bold;">5</output>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Treino</label>
+                    <input type="text" id="typeInput" placeholder="Ex: Musculação Manhã...">
+                </div>
+                <button class="btn-add" onclick="addWorkout()">+ Adicionar Treino</button>
+                <button onclick="clearData()" style="margin-top:10px; background:none; border:none; color:rgba(255,255,255,0.3); cursor:pointer; font-size:12px;">Limpar Tudo</button>
+            </div>
+
+            <div class="card history-card">
+                <h3 style="margin-bottom: 20px;">Histórico Recente</h3>
+                <div id="historyList"></div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        let workouts = JSON.parse(localStorage.getItem('myWorkouts')) || [];
+        let chartInstance = null;
+
+        // Função para calcular os totais por dia
+        function getDailyTotals() {
+            // Cria array de 31 posições preenchido com null
+            // Usamos null para que o gráfico não desenhe linha no zero onde não tem treino
+            const totals = new Array(31).fill(null); 
+
+            workouts.forEach(w => {
+                const idx = w.day - 1; // Ajusta índice (dia 1 = index 0)
+                if (idx >= 0 && idx < 31) {
+                    // Se for null (primeiro treino do dia), inicia com 0
+                    if (totals[idx] === null) totals[idx] = 0;
+                    
+                    // SOMA o esforço
+                    totals[idx] += parseInt(w.effort);
+                }
+            });
+            return totals;
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('workoutChart').getContext('2d');
+            const daysLabels = Array.from({length: 31}, (_, i) => i + 1);
+            
+            // Pega os dados SOMADOS
+            const dataValues = getDailyTotals();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: daysLabels,
+                    datasets: [{
+                        label: 'Esforço Total do Dia',
+                        data: dataValues,
+                        borderColor: '#f4c568',
+                        backgroundColor: 'rgba(244, 197, 104, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointBackgroundColor: '#fff',
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            // Removi o 'max: 10' para o gráfico escalar sozinho se a soma for 20, 30, etc.
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: '#ccc' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#ccc' }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function renderList() {
+            const listEl = document.getElementById('historyList');
+            listEl.innerHTML = '';
+            
+            const recentWorkouts = [...workouts].reverse();
+
+            if (recentWorkouts.length === 0) {
+                listEl.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.3); margin-top:50px;">Nenhum treino.</p>';
+                return;
+            }
+
+            recentWorkouts.forEach(w => {
+                const item = document.createElement('div');
+                item.className = 'workout-item';
+                item.innerHTML = `
+                    <div class="workout-info">
+                        <h4>${w.type}</h4>
+                        <p>Dia ${w.day}</p>
+                    </div>
+                    <span class="effort-badge">Nível ${w.effort}</span>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        function addWorkout() {
+            const day = parseInt(document.getElementById('dayInput').value);
+            const effort = parseInt(document.getElementById('effortInput').value);
+            const type = document.getElementById('typeInput').value;
+
+            if (!day || day < 1 || day > 31) { alert('Dia inválido.'); return; }
+            if (!type) { alert('Dê um nome ao treino.'); return; }
+
+            const newWorkout = { day, effort, type, id: Date.now() };
+            workouts.push(newWorkout);
+            localStorage.setItem('myWorkouts', JSON.stringify(workouts));
+
+            // Atualiza TUDO no gráfico (mais seguro para garantir a soma correta)
+            updateChartFull(); 
+            renderList();
+
+            document.getElementById('typeInput').value = '';
+        }
+
+        function updateChartFull() {
+            // Recalcula todos os totais
+            const newTotals = getDailyTotals();
+            chartInstance.data.datasets[0].data = newTotals;
+            chartInstance.update();
+        }
+
+        function clearData() {
+            if(confirm("Apagar histórico?")) {
+                localStorage.removeItem('myWorkouts');
+                workouts = [];
+                location.reload();
+            }
+        }
+
+        window.onload = () => {
+            initChart();
+            renderList();
+        };
+    </script>
+</body>
+</html>
